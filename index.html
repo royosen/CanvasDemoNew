@@ -1,0 +1,145 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title></title>
+    <link rel="stylesheet" type="text/css" href="demo.css" />
+</head>
+<body>
+    <h2>Canvas Saving an image</h2>
+    <br />
+    <canvas class="input" id="canvas" width="800" height="600"></canvas>
+    <form id="canvas-options">
+        <label>Filename: <input type="text" class="filename" id="canvas-filename" placeholder="canvas2image" />.png</label>
+        <input type="submit" value="Save" />
+        <input type="button" id="canvas-clear" value="Clear"/>
+    </form> 
+    <script src="canvasToBlob.js"></script>
+    <script src="fileSaver.js"></script>    
+    
+
+    <script type="text/javascript">
+        var canvas = document.getElementById("canvas");
+        var ctx = canvas.getContext("2d");
+        canvas.addEventListener("mousedown", canvasMouseDown);
+        canvas.addEventListener("mousemove", canvasMouseMove);
+        canvas.addEventListener("mouseup", canvasMouseUpOut);
+        canvas.addEventListener("mouseout", canvasMouseUpOut);
+		var mousex = 400, mousey = 300;
+
+        var isdrawing = false;
+        var x_points = sessionStorage.x_points || [],
+            y_points = sessionStorage.y_points || [],
+            dragpoint = sessionStorage.dragpoint || [];
+
+        function canvasMouseDown() {
+            event.preventDefault();
+            isdrawing = true;
+            x_points.push(event.pageX - canvas.offsetLeft);
+            y_points.push(event.pageY - canvas.offsetTop);
+            dragpoint.push(false);
+            //alert(x_points.length);
+            draw();
+        }
+        function canvasMouseMove() {
+            mousex = event.pageX - canvas.offsetLeft;
+			mousey = event.pageY - canvas.offsetTop;
+			if (isdrawing)
+            {
+                x_points.push(event.pageX - canvas.offsetLeft);
+                y_points.push(event.pageY - canvas.offsetTop);
+                dragpoint.push(true);
+                draw();
+            }
+        }
+        function canvasMouseUpOut() {
+            isdrawing = false;
+        }
+
+        function draw() {
+			canvas.width = canvas.width;
+            var i = 0, len = x_points.length;
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = "#000000";
+            ctx.lineJoin = "round";
+            ctx.beginPath();
+            for (i = 0; i < len; i++)
+            {
+                if (i === 0 || dragpoint[i] === false) {
+                    ctx.moveTo(x_points[i] - 1, y_points[i]);
+                }
+                ctx.lineTo(x_points[i], y_points[i]);				
+				/*
+				if( i+1<len && dragpoint[i+1] == false) {
+					ctx.closePath();
+					ctx.stroke();
+					ctx.beginPath();
+					ctx.lineWidth += 1;
+				}
+				*/
+			}
+            //ctx.closePath();
+            ctx.stroke();
+            var myDate = new Date();
+            ctx.fillText("Canvas demo: " + len + " " + myDate.toString(), 10, 10);
+			
+			test();	
+        }
+
+        var form = document.getElementById("canvas-options"),
+            btnClear = document.getElementById("canvas-clear"),
+            txtFileName = document.getElementById("canvas-filename");
+
+        form.addEventListener("submit", function (event) {
+            event.preventDefault();
+            canvas.toBlob(function (blob) {
+                saveAs(
+                      blob
+                    , (txtFileName.value || txtFileName.placeholder) + ".png"
+                );
+            }, "image/png");
+        });
+
+        btnClear.addEventListener("click", function (event) {
+            canvas.width = canvas.width;
+            x_points = y_points = drag_points.length = 0;
+        });
+
+        // test
+        function test() {
+			//canvas.width = canvas.width;
+            var myDate = new Date();
+            var x = [], y = [];
+            var n = 100000.0;
+			var len = 4*Math.PI;
+			var a = len*2/n;
+            for (var i = -len; i < len; i += a) {
+                x.push(i*30 + mousex);
+                y.push(-Math.sin(i)*200 + mousey);
+            }
+            ctx.strokeStyle = "red";
+            ctx.lineWidth = 2;
+
+            ctx.beginPath();
+            ctx.moveTo(x[0], y[0]);
+            for (var i = 1; i < n; i += 1) {
+                ctx.lineTo(x[i], y[i]);
+            }
+            //ctx.closePath();
+            ctx.stroke();
+
+            var myDate1 = new Date();
+            var d = myDate1.getTime() - myDate.getTime();
+            ctx.fillText(myDate.toString() + myDate.getTime().toString(), 10, 25);
+            ctx.fillText(myDate1.toString() + myDate1.getTime().toString(), 10, 40);
+
+            /* 说到 beginPath ，就不得不提到 closePath ，两者是不是有很“紧”的联系呢？答案是 几乎没有关系 。
+               closePath的意思不是结束路径，而是 关闭 路径，它会试图从当前路径的终点连一条路径到起点，让整个
+               路径闭合起来。但是，这并不意味着它之后的路径就是新路径了！
+            */
+        }
+        test();
+    </script>
+</body>
+</html>
+
